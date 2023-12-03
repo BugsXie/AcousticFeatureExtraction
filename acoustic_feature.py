@@ -16,6 +16,9 @@
 #              V1.0: 2020/4/27-2020/5/9
 # @License  : GPLv3
 # @Brief    : 声学特征提取
+
+# test
+
 import os
 import subprocess
 import numpy as np
@@ -30,8 +33,8 @@ import matplotlib.ticker as mtick
 from mpl_toolkits.axes_grid1 import host_subplot
 import mpl_toolkits.axisartist as AA
 
-matplotlib.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文
-matplotlib.rcParams['axes.unicode_minus'] = False  # 当坐标轴有负号的时候可以显示负号
+matplotlib.rcParams["font.sans-serif"] = ["SimHei"]  # 用来正常显示中文
+matplotlib.rcParams["axes.unicode_minus"] = False  # 当坐标轴有负号的时候可以显示负号
 
 
 def _print(bl=True, s=None):
@@ -47,6 +50,7 @@ def func_format(x, pos):
 
 class OpenSmileFeatureSet:
     """利用openSmile工具进行特征提取"""
+
     dft_feature_file_save_path = os.getcwd()  # 默认特征集文件保存路径
 
     def __init__(self, input_file):
@@ -67,10 +71,16 @@ class OpenSmileFeatureSet:
         :param output_file: 输出特征.csv文件（-O命令，默认ARFF格式），修改“-O”命令，输出openSMILE所支持的文件格式
         :return: None
         """
-        cmd = "SMILExtract -noconsoleoutput -C %s -I %s -O %s" % (config_file, self.input_file, output_file)
+        cmd = "SMILExtract -noconsoleoutput -C %s -I %s -O %s" % (
+            config_file,
+            self.input_file,
+            output_file,
+        )
         subprocess.run(cmd, cwd=self.openSmile_path, shell=True)
 
-    def get_eGeMAPS(self, output_file=os.path.join(dft_feature_file_save_path, "eGeMAPS.csv")):
+    def get_eGeMAPS(
+        self, output_file=os.path.join(dft_feature_file_save_path, "eGeMAPS.csv")
+    ):
         """
         提取eGeMAPS特征集中的88维特征，详见会议论文集（2016 IEEE trans on Affective Computing）：
         https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7160715
@@ -81,7 +91,9 @@ class OpenSmileFeatureSet:
         features = self.feature_file_reader(output_file)
         return features
 
-    def get_ComParE(self, output_file=os.path.join(dft_feature_file_save_path, "ComParE_2016.csv")):
+    def get_ComParE(
+        self, output_file=os.path.join(dft_feature_file_save_path, "ComParE_2016.csv")
+    ):
         """
         提取ComParE_2016特征集中的6373维特征，详见InterSpeech挑战赛论文集（2016 Computational Paralinguistics ChallengE）：
         https://www.isca-speech.org/archive/Interspeech_2016/pdfs/0129.PDF
@@ -93,7 +105,9 @@ class OpenSmileFeatureSet:
         features = self.feature_file_reader(output_file)
         return features
 
-    def get_IS09(self, output_file=os.path.join(dft_feature_file_save_path, "IS09_emotion.csv")):
+    def get_IS09(
+        self, output_file=os.path.join(dft_feature_file_save_path, "IS09_emotion.csv")
+    ):
         """
         提取IS09_emotion特征集中的384维特征，详见InterSpeech挑战赛论文集（The INTERSPEECH 2009 Emotion Challenge）：
         https://www.isca-speech.org/archive/archive_papers/interspeech_2009/papers/i09_0312.pdf
@@ -120,7 +134,17 @@ class OpenSmileFeatureSet:
 
 class Spectrogram:
     """声谱图（语谱图）特征"""
-    def __init__(self, input_file, sr=None, frame_len=512, n_fft=None, win_step=2 / 3, window="hamming", preemph=0.97):
+
+    def __init__(
+        self,
+        input_file,
+        sr=None,
+        frame_len=512,
+        n_fft=None,
+        win_step=2 / 3,
+        window="hamming",
+        preemph=0.97,
+    ):
         """
         初始化
         :param input_file: 输入音频文件
@@ -132,14 +156,20 @@ class Spectrogram:
         :param preemph: 预加重系数,默认0.97
         """
         self.input_file = input_file
-        self.wave_data, self.sr = librosa.load(self.input_file, sr=sr)  # 音频全部采样点的归一化数组形式数据
-        self.wave_data = librosa.effects.preemphasis(self.wave_data, coef=preemph)  # 预加重，系数0.97
+        self.wave_data, self.sr = librosa.load(
+            self.input_file, sr=sr
+        )  # 音频全部采样点的归一化数组形式数据
+        self.wave_data = librosa.effects.preemphasis(
+            self.wave_data, coef=preemph
+        )  # 预加重，系数0.97
         self.window_len = frame_len  # 窗长512
         if n_fft is None:
             self.fft_num = self.window_len  # 设置NFFT点数与窗长相等
         else:
             self.fft_num = n_fft
-        self.hop_length = round(self.window_len * win_step)  # 重叠部分采样点数设置为窗长的1/3（1/3~1/2）,即帧移(窗移)2/3
+        self.hop_length = round(
+            self.window_len * win_step
+        )  # 重叠部分采样点数设置为窗长的1/3（1/3~1/2）,即帧移(窗移)2/3
         self.window = window
 
     def get_magnitude_spectrogram(self):
@@ -149,8 +179,15 @@ class Spectrogram:
         """
         # 频谱矩阵：行数=1 + n_fft/2=257，列数=帧数n_frames=全部采样点数/(512*2/3)+1（向上取整）
         # 快速傅里叶变化+汉明窗
-        mag_spec = np.abs(librosa.stft(self.wave_data, n_fft=self.fft_num, hop_length=self.hop_length,
-                                       win_length=self.window_len, window=self.window))
+        mag_spec = np.abs(
+            librosa.stft(
+                self.wave_data,
+                n_fft=self.fft_num,
+                hop_length=self.hop_length,
+                win_length=self.window_len,
+                window=self.window,
+            )
+        )
         return mag_spec
 
     def get_power_spectrogram(self):
@@ -166,7 +203,9 @@ class Spectrogram:
         获取log尺度功率谱（能量谱）：幅值谱平方S(也就是功率谱),10 * log10(S / ref),其中ref指定为S的最大值
         :return: np.ndarray[shape=(1 + n_fft/2, n_frames), dtype=float32]，（257，全部采样点数/(512*2/3)+1）
         """
-        log_pow_spec = librosa.amplitude_to_db(self.get_magnitude_spectrogram(), ref=np.max)  # 转换为log尺度
+        log_pow_spec = librosa.amplitude_to_db(
+            self.get_magnitude_spectrogram(), ref=np.max
+        )  # 转换为log尺度
         return log_pow_spec
 
     def get_mel_spectrogram(self, n_mels=26):
@@ -177,9 +216,15 @@ class Spectrogram:
         """
         # 频谱矩阵：行数=n_mels=26，列数=帧数n_frames=全部采样点数/(512*2/3)+1（向上取整）
         # 快速傅里叶变化+汉明窗,Mel滤波器组的滤波器数量 = 26
-        mel_spec = librosa.feature.melspectrogram(self.wave_data, self.sr, n_fft=self.fft_num,
-                                                  hop_length=self.hop_length, win_length=self.window_len,
-                                                  window=self.window, n_mels=n_mels)
+        mel_spec = librosa.feature.melspectrogram(
+            self.wave_data,
+            self.sr,
+            n_fft=self.fft_num,
+            hop_length=self.hop_length,
+            win_length=self.window_len,
+            window=self.window,
+            n_mels=n_mels,
+        )
         log_mel_spec = librosa.power_to_db(mel_spec)  # 转换为log尺度
         return log_mel_spec
 
@@ -192,7 +237,13 @@ class Spectrogram:
         """
         if fig == "mag":
             mag_spec = self.get_magnitude_spectrogram()
-            librosa.display.specshow(mag_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="linear")
+            librosa.display.specshow(
+                mag_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="linear",
+            )
             plt.title("Magnitude Spectrogram")
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
@@ -200,7 +251,13 @@ class Spectrogram:
             plt.colorbar(shrink=0.7)
         elif fig == "pow":
             pow_spec = self.get_power_spectrogram()
-            librosa.display.specshow(pow_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="linear")
+            librosa.display.specshow(
+                pow_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="linear",
+            )
             plt.title("Power Spectrogram")
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
@@ -208,7 +265,13 @@ class Spectrogram:
             plt.colorbar(shrink=0.7)
         elif fig == "log_pow":
             log_pow_spec = self.get_log_power_spectrogram()
-            librosa.display.specshow(log_pow_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="log")
+            librosa.display.specshow(
+                log_pow_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="log",
+            )
             plt.title("Log-Power Spectrogram")
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
@@ -216,7 +279,13 @@ class Spectrogram:
             plt.colorbar(shrink=0.7, format="%+02.0f dB")
         elif fig == "mel":
             mel_spec = self.get_mel_spectrogram(**kwargs)
-            librosa.display.specshow(mel_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="mel")
+            librosa.display.specshow(
+                mel_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="mel",
+            )
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
             plt.gca().xaxis.set_major_formatter(mtick.FuncFormatter(func_format))
@@ -226,7 +295,13 @@ class Spectrogram:
             plt.figure(figsize=(16, 8))
             plt.subplot(2, 2, 1)
             mag_spec = self.get_magnitude_spectrogram()
-            librosa.display.specshow(mag_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="linear")
+            librosa.display.specshow(
+                mag_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="linear",
+            )
             plt.title("Magnitude Spectrogram")
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
@@ -235,7 +310,13 @@ class Spectrogram:
 
             plt.subplot(2, 2, 2)
             pow_spec = self.get_power_spectrogram()
-            librosa.display.specshow(pow_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="linear")
+            librosa.display.specshow(
+                pow_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="linear",
+            )
             plt.title("Power Spectrogram")
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
@@ -244,7 +325,13 @@ class Spectrogram:
 
             plt.subplot(2, 2, 3)
             log_pow_spec = self.get_log_power_spectrogram()
-            librosa.display.specshow(log_pow_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="linear")
+            librosa.display.specshow(
+                log_pow_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="linear",
+            )
             plt.title("Log-Power Spectrogram")
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
@@ -253,7 +340,13 @@ class Spectrogram:
 
             plt.subplot(2, 2, 4)
             mel_spec = self.get_mel_spectrogram(**kwargs)
-            librosa.display.specshow(mel_spec, sr=self.sr, hop_length=self.hop_length, x_axis="s", y_axis="mel")
+            librosa.display.specshow(
+                mel_spec,
+                sr=self.sr,
+                hop_length=self.hop_length,
+                x_axis="s",
+                y_axis="mel",
+            )
             plt.title("Log-Mel Spectrogram")
             plt.xlabel("Time/ms")
             plt.ylabel("Frequency/Hz")
@@ -267,7 +360,16 @@ class Spectrogram:
 
 class RhythmFeatures:
     """韵律学特征"""
-    def __init__(self, input_file, sr=None, frame_len=512, n_fft=None, win_step=2 / 3, window="hamming"):
+
+    def __init__(
+        self,
+        input_file,
+        sr=None,
+        frame_len=512,
+        n_fft=None,
+        win_step=2 / 3,
+        window="hamming",
+    ):
         """
         初始化
         :param input_file: 输入音频文件
@@ -286,7 +388,9 @@ class RhythmFeatures:
         else:
             self.fft_num = n_fft
         self.win_step = win_step
-        self.hop_length = round(self.window_len * win_step)  # 重叠部分采样点数设置为窗长的1/3（1/3~1/2）,即帧移(窗移)2/3
+        self.hop_length = round(
+            self.window_len * win_step
+        )  # 重叠部分采样点数设置为窗长的1/3（1/3~1/2）,即帧移(窗移)2/3
         self.window = window
 
     def lld(self, **kwargs):
@@ -318,8 +422,26 @@ class RhythmFeatures:
         spl = self.intensity()
         spl_de = librosa.feature.delta(spl, width=3)
         spl_de2 = librosa.feature.delta(spl, width=3, order=2)
-        return (duration_voiced, duration_unvoiced, duration_all, f0, f0_de, f0_de2, energy, energy_de, energy_de2,
-                ste, ste_de, ste_de2, zcr, zcr_de, zcr_de2, spl, spl_de, spl_de2)
+        return (
+            duration_voiced,
+            duration_unvoiced,
+            duration_all,
+            f0,
+            f0_de,
+            f0_de2,
+            energy,
+            energy_de,
+            energy_de2,
+            ste,
+            ste_de,
+            ste_de2,
+            zcr,
+            zcr_de,
+            zcr_de2,
+            spl,
+            spl_de,
+            spl_de2,
+        )
 
     def hsf(self, **kwargs):
         """
@@ -336,8 +458,16 @@ class RhythmFeatures:
         llds = self.lld(**kwargs)
         hsfs = []
         for i in range(len(llds)):
-            hsfs = np.append(hsfs, [np.min(llds[i]), np.max(llds[i]),
-                                    np.ptp(llds[i]), np.mean(llds[i]), np.std(llds[i])])
+            hsfs = np.append(
+                hsfs,
+                [
+                    np.min(llds[i]),
+                    np.max(llds[i]),
+                    np.ptp(llds[i]),
+                    np.mean(llds[i]),
+                    np.std(llds[i]),
+                ],
+            )
             if i > 2:  # 前3个为duration，不计算其偏度和峰度
                 hsfs = np.append(hsfs, [skew(llds[i]), kurtosis(llds[i])])
         return hsfs
@@ -358,7 +488,9 @@ class RhythmFeatures:
             elif i == len(self.wave_data) - 1:  # 不满一帧，最后一个采样点
                 energy.append(energy_sum_per_frame)  # 将最后一帧短时能量加入列表
         energy = np.array(energy)
-        energy = np.where(energy == 0, np.finfo(np.float64).eps, energy)  # 避免能量值为0，防止后续取log出错(eps是取非负的最小值)
+        energy = np.where(
+            energy == 0, np.finfo(np.float64).eps, energy
+        )  # 避免能量值为0，防止后续取log出错(eps是取非负的最小值)
         return energy
 
     def zero_crossing_rate(self):
@@ -385,11 +517,20 @@ class RhythmFeatures:
         每帧内所有采样点的幅值平方和作为能量值
         :return: 每帧能量值，np.ndarray[shape=(1，n_frames), dtype=float64]
         """
-        mag_spec = np.abs(librosa.stft(self.wave_data, n_fft=self.fft_num, hop_length=self.hop_length,
-                                       win_length=self.frame_len, window=self.window))
+        mag_spec = np.abs(
+            librosa.stft(
+                self.wave_data,
+                n_fft=self.fft_num,
+                hop_length=self.hop_length,
+                win_length=self.frame_len,
+                window=self.window,
+            )
+        )
         pow_spec = np.square(mag_spec)
         energy = np.sum(pow_spec, axis=0)
-        energy = np.where(energy == 0, np.finfo(np.float64).eps, energy)  # 避免能量值为0，防止后续取log出错(eps是取非负的最小值)
+        energy = np.where(
+            energy == 0, np.finfo(np.float64).eps, energy
+        )  # 避免能量值为0，防止后续取log出错(eps是取非负的最小值)
         return energy
 
     def intensity(self):
@@ -410,23 +551,36 @@ class RhythmFeatures:
         :param kwargs: activity_detect参数
         :return: np.ndarray[dtype=uint32],浊音shape=(1，n)、轻音段shape=(1，2*n)、有效语音段持续时间列表shape=(1，n)，单位ms
         """
-        wav_dat_split_f, wav_dat_split, voiced_f, unvoiced_f = self.activity_detect(**kwargs)  # 端点检测
+        wav_dat_split_f, wav_dat_split, voiced_f, unvoiced_f = self.activity_detect(
+            **kwargs
+        )  # 端点检测
         duration_voiced = []  # 浊音段持续时间
         duration_unvoiced = []  # 轻音段持续时间
         duration_all = []  # 有效语音段持续时间
         if np.array(voiced_f).size > 1:  # 避免语音过短，只有一帧浊音段
             for voiced in voiced_f:  # 根据帧分割计算浊音段持续时间，两端闭区间
-                duration_voiced.append(round((voiced[1] - voiced[0] + 1) * self.frame_len / self.sr * 1000))
+                duration_voiced.append(
+                    round((voiced[1] - voiced[0] + 1) * self.frame_len / self.sr * 1000)
+                )
         else:  # 只有一帧时
             duration_voiced.append(round(self.frame_len / self.sr * 1000))
         for unvoiced in unvoiced_f:  # 根据帧分割计算清音段持续时间，浊音段左侧左闭右开，浊音段右侧左开右闭
-            duration_unvoiced.append(round((unvoiced[1] - unvoiced[0]) * self.frame_len / self.sr * 1000))
+            duration_unvoiced.append(
+                round((unvoiced[1] - unvoiced[0]) * self.frame_len / self.sr * 1000)
+            )
         if len(duration_unvoiced) <= 1:  # 避免语音过短，只有一帧浊音段
             duration_unvoiced.append(0)
         for i in range(len(duration_voiced)):  # 浊音段+浊音段两边的轻音段组成一段有效语音段
-            duration_all.append(duration_unvoiced[i * 2] + duration_voiced[i] + duration_unvoiced[i * 2 + 1])
-        return (np.array(duration_voiced, dtype=np.uint32), np.array(duration_unvoiced, dtype=np.uint32),
-                np.array(duration_all, dtype=np.uint32))
+            duration_all.append(
+                duration_unvoiced[i * 2]
+                + duration_voiced[i]
+                + duration_unvoiced[i * 2 + 1]
+            )
+        return (
+            np.array(duration_voiced, dtype=np.uint32),
+            np.array(duration_unvoiced, dtype=np.uint32),
+            np.array(duration_all, dtype=np.uint32),
+        )
 
     def pitch(self, ts_mag=0.25):
         """
@@ -436,14 +590,22 @@ class RhythmFeatures:
         :return: 每帧基频及其对应峰的幅值(>0)，
                  np.ndarray[shape=(1 + n_fft/2，n_frames), dtype=float32]，（257，全部采样点数/(512*2/3)+1）
         """
-        mag_spec = np.abs(librosa.stft(self.wave_data, n_fft=self.fft_num, hop_length=self.hop_length,
-                                       win_length=self.frame_len, window=self.window))
+        mag_spec = np.abs(
+            librosa.stft(
+                self.wave_data,
+                n_fft=self.fft_num,
+                hop_length=self.hop_length,
+                win_length=self.frame_len,
+                window=self.window,
+            )
+        )
         # pitches:shape=(d,t)  magnitudes:shape=(d.t), Where d is the subset of FFT bins within fmin and fmax.
         # pitches[f,t] contains instantaneous frequency at bin f, time t
         # magnitudes[f,t] contains the corresponding magnitudes.
         # pitches和magnitudes大于maximal magnitude时认为是一个pitch，否则取0，maximal默认取threshold*ref(S)=1*mean(S, axis=0)
-        pitches, magnitudes = librosa.piptrack(S=mag_spec, sr=self.sr, threshold=1.0, ref=np.mean,
-                                               fmin=50, fmax=500)  # 人类正常说话基频最大可能范围50-500Hz
+        pitches, magnitudes = librosa.piptrack(
+            S=mag_spec, sr=self.sr, threshold=1.0, ref=np.mean, fmin=50, fmax=500
+        )  # 人类正常说话基频最大可能范围50-500Hz
         ts = np.average(magnitudes[np.nonzero(magnitudes)]) * ts_mag
         pit_likely = pitches
         mag_likely = magnitudes
@@ -451,7 +613,9 @@ class RhythmFeatures:
         mag_likely[magnitudes < ts] = 0
         return pit_likely, mag_likely
 
-    def activity_detect(self, min_interval=15, e_low_multifactor=1.0, zcr_multifactor=1.0, pt=False):
+    def activity_detect(
+        self, min_interval=15, e_low_multifactor=1.0, zcr_multifactor=1.0, pt=False
+    ):
         """
         利用短时能量，短时过零率，使用双门限法进行端点检测
         :param min_interval: 最小浊音间隔，默认15帧
@@ -465,8 +629,12 @@ class RhythmFeatures:
         zcr = self.zero_crossing_rate()
         energy_average = sum(ste) / len(ste)  # 求全部帧的短时能量均值
         energy_high = energy_average / 4  # 能量均值的4分之一作为能量高阈值
-        energy_low = (sum(ste[:5]) / 5 + energy_high / 5) * e_low_multifactor  # 前5帧能量均值+能量高阈值的5分之一作为能量低阈值
-        zcr_threshold = sum(zcr) / len(zcr) * zcr_multifactor  # 过零率均值*zcr_multfactor作为过零率阈值
+        energy_low = (
+            sum(ste[:5]) / 5 + energy_high / 5
+        ) * e_low_multifactor  # 前5帧能量均值+能量高阈值的5分之一作为能量低阈值
+        zcr_threshold = (
+            sum(zcr) / len(zcr) * zcr_multifactor
+        )  # 过零率均值*zcr_multfactor作为过零率阈值
         voiced_sound = []  # 语音段的浊音部分
         voiced_sound_added = []  # 浊音扩充后列表
         wave_detected = []  # 轻音扩充后的最终列表
@@ -483,13 +651,23 @@ class RhythmFeatures:
                     voiced_sound.append(i)
                 add_flag = True  # 继续寻找下一段浊音（下一个阈值）
             # 再次达到阈值，判断两个浊音间隔是否大于最小浊音间隔
-            elif add_flag and ste[i] >= energy_high and i - voiced_sound[-1] > min_interval:
+            elif (
+                add_flag
+                and ste[i] >= energy_high
+                and i - voiced_sound[-1] > min_interval
+            ):
                 voiced_sound.append(i)  # 大于，则分段，加入列表
                 add_flag = False  # 接下来禁止加入
-            elif add_flag and ste[i] >= energy_high and i - voiced_sound[-1] <= min_interval:
+            elif (
+                add_flag
+                and ste[i] >= energy_high
+                and i - voiced_sound[-1] <= min_interval
+            ):
                 voiced_sound = voiced_sound[:-1]  # 小于，则不分段，该段不加入列表
                 add_flag = False  # 接下来禁止加入
-            if (i == len(ste) - 1) and (len(voiced_sound) % 2 == 1):  # 当到达最后一帧，发现浊音段为奇数，则此时到最后一帧为浊音段
+            if (i == len(ste) - 1) and (
+                len(voiced_sound) % 2 == 1
+            ):  # 当到达最后一帧，发现浊音段为奇数，则此时到最后一帧为浊音段
                 if i - voiced_sound[-1] <= 2:  # 检测帧索引间隔，去掉间隔小于2的索引，判断该段为噪音
                     voiced_sound = voiced_sound[:-1]  # 该段不加入列表
                 else:  # 否则加入列表
@@ -532,20 +710,37 @@ class RhythmFeatures:
         wave_data_detected_frame = []  # 端点检测后，以帧为单位的有效语音列表
         for index in range(len(wave_detected)):
             if index % 2 == 0:  # 按段分割成列表
-                wave_data_detected_frame.append(wave_detected[index:index + 2])
+                wave_data_detected_frame.append(wave_detected[index : index + 2])
             else:
                 continue
-        _print(pt, "分割后共{}段语音，按帧分割为{}".format(len(wave_data_detected_frame), wave_data_detected_frame))
+        _print(
+            pt,
+            "分割后共{}段语音，按帧分割为{}".format(
+                len(wave_data_detected_frame), wave_data_detected_frame
+            ),
+        )
         wave_data_detected = []  # 端点检测后，对应全部采样点的幅值列表，其中列表代表每个有效语音段
         for index in wave_data_detected_frame:
             try:
-                wave_data_detected.append(self.wave_data[index[0] * int(self.frame_len):
-                                                         index[1] * int(self.frame_len)])
+                wave_data_detected.append(
+                    self.wave_data[
+                        index[0] * int(self.frame_len) : index[1] * int(self.frame_len)
+                    ]
+                )
             except IndexError:
-                wave_data_detected.append(self.wave_data[index[0] * int(self.frame_len):-1])
-        _print(pt, "分割后共{}段语音，按全部采样点的幅值分割为{}".format(len(wave_data_detected), wave_data_detected))
+                wave_data_detected.append(
+                    self.wave_data[index[0] * int(self.frame_len) : -1]
+                )
+        _print(
+            pt,
+            "分割后共{}段语音，按全部采样点的幅值分割为{}".format(
+                len(wave_data_detected), wave_data_detected
+            ),
+        )
         if np.array(voiced_sound_added).size > 1:  # 避免语音过短，只有一帧浊音段
-            voiced_frame = np.array(voiced_sound_added).reshape((-1, 2)).tolist()  # 按帧分割的浊音段
+            voiced_frame = (
+                np.array(voiced_sound_added).reshape((-1, 2)).tolist()
+            )  # 按帧分割的浊音段
         else:  # 只有一帧时
             voiced_frame = np.array(voiced_sound_added).tolist()
         unvoiced_frame = []  # 按帧分割的轻音段
@@ -556,7 +751,12 @@ class RhythmFeatures:
                 unvoiced_frame.append([voiced_sound_added[i], wave_detected[i]])
             else:
                 unvoiced_frame.append([0, 0])
-        return wave_data_detected_frame, wave_data_detected, voiced_frame, unvoiced_frame
+        return (
+            wave_data_detected_frame,
+            wave_data_detected,
+            voiced_frame,
+            unvoiced_frame,
+        )
 
     def plot(self, energy="ste", show=True):
         """
@@ -587,7 +787,9 @@ class RhythmFeatures:
         elif energy == "energy":
             e = self.energy()
         else:
-            raise ValueError("Incorrect energy type parameter input, choose from 'ste' or 'energy'.")
+            raise ValueError(
+                "Incorrect energy type parameter input, choose from 'ste' or 'energy'."
+            )
         e_ax = wave_ax.twinx()  # type:AA.Axes  # 共享X轴
         aa = e_ax.axis["right"]  # type:AA.axis_artist.AxisArtist
         aa.toggle(all=True)
@@ -596,7 +798,9 @@ class RhythmFeatures:
         aa.major_ticklabels.set_color("r")
         e_ax.set_ylabel("Energy", c="r")
         e_ax.set_ylim(0, np.max(e))
-        x = np.linspace(self.frame_len/self.sr*1000, audio_total_time, len(e))  # 从第1帧结束对应时间开始，到总时长结束
+        x = np.linspace(
+            self.frame_len / self.sr * 1000, audio_total_time, len(e)
+        )  # 从第1帧结束对应时间开始，到总时长结束
         x = np.append(0, x)  # 第1帧时间之前补一个点：（0,0）
         e = np.append(0, e)
         if energy == "ste":
@@ -606,7 +810,9 @@ class RhythmFeatures:
         # 以下在波形曲线上再次叠加绘制过零率曲线
         zcr = self.zero_crossing_rate()
         zcr_ax = wave_ax.twinx()  # type:AA.Axes
-        zcr_ax.axis["right"] = zcr_ax.get_grid_helper().new_fixed_axis(loc="right", axes=zcr_ax, offset=(45, 0))
+        zcr_ax.axis["right"] = zcr_ax.get_grid_helper().new_fixed_axis(
+            loc="right", axes=zcr_ax, offset=(45, 0)
+        )
         aa = zcr_ax.axis["right"]  # type:AA.axis_artist.AxisArtist
         aa.toggle(all=True)
         aa.line.set_color("g")
@@ -614,19 +820,43 @@ class RhythmFeatures:
         aa.major_ticklabels.set_color("g")
         zcr_ax.set_ylabel("Times of Zero Crossing", c="g")
         zcr_ax.set_ylim(0, np.max(zcr))
-        x = np.linspace(self.frame_len / self.sr * 1000, audio_total_time, len(zcr))  # 从第1帧结束对应时间开始，到总时长结束
+        x = np.linspace(
+            self.frame_len / self.sr * 1000, audio_total_time, len(zcr)
+        )  # 从第1帧结束对应时间开始，到总时长结束
         x = np.append(0, x)  # 第1帧时间之前补一个点：（0,0）
         zcr = np.append(0, zcr)
         zcr_ax.plot(x, zcr, c="g", lw=1.5, label="zero crossing rate")
-        wave_ax.legend(prop={'family': 'Times New Roman', 'size': 10}, loc="upper right",
-                       framealpha=0.5, ncol=3, handletextpad=0.2, columnspacing=0.7)
+        wave_ax.legend(
+            prop={"family": "Times New Roman", "size": 10},
+            loc="upper right",
+            framealpha=0.5,
+            ncol=3,
+            handletextpad=0.2,
+            columnspacing=0.7,
+        )
         # 以下绘制灰度对数功率谱图
-        spec = Spectrogram(self.input_file, self.sr, self.frame_len, self.fft_num, self.win_step, self.window, 0)
-        log_power_spec = librosa.amplitude_to_db(spec.get_magnitude_spectrogram(), ref=np.max)
+        spec = Spectrogram(
+            self.input_file,
+            self.sr,
+            self.frame_len,
+            self.fft_num,
+            self.win_step,
+            self.window,
+            0,
+        )
+        log_power_spec = librosa.amplitude_to_db(
+            spec.get_magnitude_spectrogram(), ref=np.max
+        )
         log_power_spec_ax = host_subplot(212, axes_class=AA.Axes)  # type:AA.Axes
         log_power_spec_ax.set_title("Pitches on Log-Power Spectrogram")
-        librosa.display.specshow(log_power_spec[:, 1:], cmap="gray_r", sr=self.sr,
-                                 hop_length=self.hop_length, x_axis="s", y_axis="linear")
+        librosa.display.specshow(
+            log_power_spec[:, 1:],
+            cmap="gray_r",
+            sr=self.sr,
+            hop_length=self.hop_length,
+            x_axis="s",
+            y_axis="linear",
+        )
         log_power_spec_ax.set_xlabel("Time/ms")
         log_power_spec_ax.set_ylabel("Frequency/Hz")
         log_power_spec_ax.xaxis.set_major_formatter(mtick.FuncFormatter(func_format))
@@ -639,7 +869,9 @@ class RhythmFeatures:
             except ValueError:
                 f0_likely.append(np.nan)  # 当一列，即一帧全为0时，赋值最小值为nan
         f0_all = np.array(f0_likely)
-        x = np.linspace(0.5 * self.hop_length / self.sr, audio_total_time / 1000, f0_all.size)
+        x = np.linspace(
+            0.5 * self.hop_length / self.sr, audio_total_time / 1000, f0_all.size
+        )
         y = f0_all
         f0_all_ax = log_power_spec_ax.twinx()  # type:AA.Axes  # 共享X轴
         aa = f0_all_ax.axis["right"]  # type:AA.axis_artist.AxisArtist
@@ -652,10 +884,14 @@ class RhythmFeatures:
         f0_all_ax.scatter(x, y, s=10, c="r", label="F0")
         # 以下在灰度对数功率谱图上叠加绘制声压级曲线
         spl = self.intensity()
-        x = np.linspace(0.5 * self.frame_len / self.sr, audio_total_time / 1000, spl.size)
+        x = np.linspace(
+            0.5 * self.frame_len / self.sr, audio_total_time / 1000, spl.size
+        )
         y = spl
         spl_ax = log_power_spec_ax.twinx()  # type:AA.Axes  # 共享X轴
-        spl_ax.axis["right"] = spl_ax.get_grid_helper().new_fixed_axis(loc="right", axes=spl_ax, offset=(45, 0))
+        spl_ax.axis["right"] = spl_ax.get_grid_helper().new_fixed_axis(
+            loc="right", axes=spl_ax, offset=(45, 0)
+        )
         aa = spl_ax.axis["right"]  # type:AA.axis_artist.AxisArtist
         aa.toggle(all=True)
         aa.line.set_color("g")
@@ -664,8 +900,14 @@ class RhythmFeatures:
         spl_ax.set_ylabel("Intensity(SPL)/dB", c="g")
         spl_ax.set_ylim(30, 100)
         spl_ax.plot(x, y, "g", lw=1.5, label="SPL")
-        plt.legend(prop={'family': 'Times New Roman', 'size': 10}, loc="upper right",
-                   framealpha=0.5, ncol=3, handletextpad=0.2, columnspacing=0.7)
+        plt.legend(
+            prop={"family": "Times New Roman", "size": 10},
+            loc="upper right",
+            framealpha=0.5,
+            ncol=3,
+            handletextpad=0.2,
+            columnspacing=0.7,
+        )
 
         plt.tight_layout()
         if show:
@@ -674,7 +916,17 @@ class RhythmFeatures:
 
 class SpectrumFeatures:
     """基于谱的相关特征"""
-    def __init__(self, input_file, sr=None, frame_len=512, n_fft=None, win_step=2 / 3, window="hamming", preemph=0.97):
+
+    def __init__(
+        self,
+        input_file,
+        sr=None,
+        frame_len=512,
+        n_fft=None,
+        win_step=2 / 3,
+        window="hamming",
+        preemph=0.97,
+    ):
         """
         初始化
         :param input_file: 输入音频文件
@@ -687,9 +939,13 @@ class SpectrumFeatures:
         """
         self.input_file = input_file
         self.frame_len = frame_len
-        self.spec = Spectrogram(self.input_file, sr, self.frame_len, n_fft, win_step, window, preemph)
+        self.spec = Spectrogram(
+            self.input_file, sr, self.frame_len, n_fft, win_step, window, preemph
+        )
         self.wave_data, self.sr = self.spec.wave_data, self.spec.sr
-        self.rym = RhythmFeatures(self.input_file, sr, self.frame_len, n_fft, win_step, window)
+        self.rym = RhythmFeatures(
+            self.input_file, sr, self.frame_len, n_fft, win_step, window
+        )
         self.energy = self.rym.energy()  # 获取每帧能量值
 
     def mfcc(self, n_mfcc=13, ceplifter=22, n_mels=26, replace_energy=True):
@@ -703,7 +959,9 @@ class SpectrumFeatures:
         """
         log_mel_spec = self.spec.get_mel_spectrogram(n_mels)  # 获取log-mel谱
         # 前13个MFCC系数，升倒谱系数22, shape=(n_mfcc, t)=(13, 帧数n_frames), 每一列为一个MFCC特征向量
-        mfcc_f = librosa.feature.mfcc(S=log_mel_spec, n_mfcc=n_mfcc, lifter=ceplifter)  # log-mel谱DCT之后得到MFCC
+        mfcc_f = librosa.feature.mfcc(
+            S=log_mel_spec, n_mfcc=n_mfcc, lifter=ceplifter
+        )  # log-mel谱DCT之后得到MFCC
         if replace_energy:
             mfcc_f[0, :] = np.log(self.energy)  # 将第0个MFCC系数替换成对数能量值
         mfcc_delta = librosa.feature.delta(mfcc_f, width=3)  # 一阶差分
@@ -731,7 +989,16 @@ class SpectrumFeatures:
 
 class QualityFeatures:
     """声音质量特征（音质）"""
-    def __init__(self, input_file, sr=None, frame_len=512, n_fft=None, win_step=2 / 3, window="hamming"):
+
+    def __init__(
+        self,
+        input_file,
+        sr=None,
+        frame_len=512,
+        n_fft=None,
+        win_step=2 / 3,
+        window="hamming",
+    ):
         """
         初始化
         :param input_file: 输入音频文件
@@ -747,7 +1014,9 @@ class QualityFeatures:
         self.n_fft = n_fft
         self.window_len = frame_len  # 窗长512
         self.win_step = win_step
-        self.hop_length = round(self.window_len * win_step)  # 重叠部分采样点数设置为窗长的1/3（1/3~1/2）,即帧移(窗移)2/3
+        self.hop_length = round(
+            self.window_len * win_step
+        )  # 重叠部分采样点数设置为窗长的1/3（1/3~1/2）,即帧移(窗移)2/3
         self.window = window
 
     def formant(self, ts_e=0.01, ts_f_d=200, ts_b_u=2000):
@@ -758,7 +1027,7 @@ class QualityFeatures:
         :param ts_b_u: 共振峰带宽上阈值：默认低于2000时认为可能会出现共振峰
         :return: F1/F2/F3、B1/B2/B3,每一列为一帧 F1/F2/F3或 B1/B2/B3，np.ndarray[shape=(3, n_frames), dtype=float64]
         """
-        _data = lfilter([1., 0.83], [1], self.wave_data)  # 预加重0.83：高通滤波器
+        _data = lfilter([1.0, 0.83], [1], self.wave_data)  # 预加重0.83：高通滤波器
         inc_frame = self.hop_length  # 窗移
         n_frame = int(np.ceil(len(_data) / inc_frame))  # 分帧数
         n_pad = n_frame * self.window_len - len(_data)  # 末端补零数
@@ -766,18 +1035,31 @@ class QualityFeatures:
         win = get_window(self.window, self.window_len, fftbins=False)  # 获取窗函数
         formant_frq = []  # 所有帧组成的第1/2/3共振峰中心频率
         formant_bw = []  # 所有帧组成的第1/2/3共振峰带宽
-        rym = RhythmFeatures(self.input_file, self.sr, self.frame_len, self.n_fft, self.win_step, self.window)
+        rym = RhythmFeatures(
+            self.input_file,
+            self.sr,
+            self.frame_len,
+            self.n_fft,
+            self.win_step,
+            self.window,
+        )
         e = rym.energy()  # 获取每帧能量值
         e = e / np.max(e)  # 归一化
         for i in range(n_frame):
-            f_i = _data[i * inc_frame:i * inc_frame + self.window_len]  # 分帧
+            f_i = _data[i * inc_frame : i * inc_frame + self.window_len]  # 分帧
             if np.all(f_i == 0):  # 避免上面的末端补零导致值全为0，防止后续求LPC线性预测误差系数出错(eps是取非负的最小值)
                 f_i[0] = np.finfo(np.float64).eps
             f_i_win = f_i * win  # 加窗
-            a = librosa.lpc(f_i_win, 8)  # 获取LPC线性预测误差系数，即滤波器分母多项式，阶数为 预期共振峰数3 *2+2，即想要得到F1-3
+            a = librosa.lpc(
+                f_i_win, 8
+            )  # 获取LPC线性预测误差系数，即滤波器分母多项式，阶数为 预期共振峰数3 *2+2，即想要得到F1-3
             rts = np.roots(a)  # 求LPC返回的预测多项式的根,为共轭复数对
-            rts = np.array([r for r in rts if np.imag(r) >= 0])  # 只保留共轭复数对一半，即虚数部分为+或-的根
-            rts = np.where(rts == 0, np.finfo(np.float64).eps, rts)  # 避免值为0，防止后续取log出错(eps是取非负的最小值)
+            rts = np.array(
+                [r for r in rts if np.imag(r) >= 0]
+            )  # 只保留共轭复数对一半，即虚数部分为+或-的根
+            rts = np.where(
+                rts == 0, np.finfo(np.float64).eps, rts
+            )  # 避免值为0，防止后续取log出错(eps是取非负的最小值)
             ang = np.arctan2(np.imag(rts), np.real(rts))  # 确定根对应的角(相位）
             # F(i) = ang(i)/(2*pi*T) = ang(i)*f/(2*pi)
             frq = ang * (self.sr / (2 * np.pi))  # 将以角度表示的rad/sample中的角频率转换为赫兹sample/s
@@ -790,17 +1072,19 @@ class QualityFeatures:
             if e[i] > ts_e:  # 当能量超过ts_e时认为可能会出现共振峰
                 # 采用共振峰频率大于ts_f_d小于self.sr/2赫兹，带宽小于ts_b_u赫兹的标准来确定共振峰
                 for j in range(len(frequencies)):
-                    if (ts_f_d < frequencies[j] < self.sr/2) and (bandwidths[j] < ts_b_u):
+                    if (ts_f_d < frequencies[j] < self.sr / 2) and (
+                        bandwidths[j] < ts_b_u
+                    ):
                         formant_f.append(frequencies[j])
                         formant_b.append(bandwidths[j])
                 # 只取前三个共振峰
                 if len(formant_f) < 3:  # 小于3个，则补nan
-                    formant_f += ([np.nan] * (3 - len(formant_f)))
+                    formant_f += [np.nan] * (3 - len(formant_f))
                 else:  # 否则只取前三个
                     formant_f = formant_f[0:3]
                 formant_frq.append(np.array(formant_f))  # 加入帧列表
                 if len(formant_b) < 3:
-                    formant_b += ([np.nan] * (3 - len(formant_b)))
+                    formant_b += [np.nan] * (3 - len(formant_b))
                 else:
                     formant_b = formant_b[0:3]
                 formant_bw.append(np.array(formant_b))
@@ -828,7 +1112,14 @@ class QualityFeatures:
         :return: Jitter(absolute)，s、Jitter(relative)，%小数表示(结果介于0-2，即0-200%）
                 numpy.float64
         """
-        rym = RhythmFeatures(self.input_file, self.sr, self.frame_len, self.n_fft, self.win_step, self.window)
+        rym = RhythmFeatures(
+            self.input_file,
+            self.sr,
+            self.frame_len,
+            self.n_fft,
+            self.win_step,
+            self.window,
+        )
         pitches, mags = rym.pitch()
         f0_all = pitches.T[pitches.T > 0]  # 获取全部有效基频一维列表
         jitter_sum = 0
@@ -856,7 +1147,14 @@ class QualityFeatures:
         :return: shimmer(absolute)，dB、shimmer(relative)，%小数表示(结果介于0-2，即0-200%）
                 numpy.float64
         """
-        rym = RhythmFeatures(self.input_file, self.sr, self.frame_len, self.n_fft, self.win_step, self.window)
+        rym = RhythmFeatures(
+            self.input_file,
+            self.sr,
+            self.frame_len,
+            self.n_fft,
+            self.win_step,
+            self.window,
+        )
         pitches, mags = rym.pitch()
         mags_all = mags.T[mags.T > 0]  # 获取全部有效振幅一维列表
         shimmer_sum = 0
@@ -891,10 +1189,26 @@ class QualityFeatures:
         plt.axhline(y=0, c="pink", ls=":", lw=1)  # Y轴0线
         # 以下绘制灰度对数功率谱图
         plt.subplot(2, 1, 2)
-        spec = Spectrogram(self.input_file, self.sr, self.frame_len, self.n_fft, self.win_step, self.window, 0.83)
-        log_power_spec = librosa.amplitude_to_db(spec.get_magnitude_spectrogram(), ref=np.max)
-        librosa.display.specshow(log_power_spec[:, 1:], sr=self.sr, hop_length=self.hop_length,
-                                 x_axis="s", y_axis="linear", cmap="gray_r")
+        spec = Spectrogram(
+            self.input_file,
+            self.sr,
+            self.frame_len,
+            self.n_fft,
+            self.win_step,
+            self.window,
+            0.83,
+        )
+        log_power_spec = librosa.amplitude_to_db(
+            spec.get_magnitude_spectrogram(), ref=np.max
+        )
+        librosa.display.specshow(
+            log_power_spec[:, 1:],
+            sr=self.sr,
+            hop_length=self.hop_length,
+            x_axis="s",
+            y_axis="linear",
+            cmap="gray_r",
+        )
         plt.title("Formants on Log-Power Spectrogram")
         plt.xlabel("Time/ms")
         plt.ylabel("Frequency/Hz")
@@ -903,11 +1217,21 @@ class QualityFeatures:
         formant_frq, __ = self.formant()  # 获取每帧共振峰中心频率
         color_p = {0: ".r", 1: ".y", 2: ".g"}  # 用不同颜色绘制F1-3点，对应红/黄/绿
         # X轴为对应的时间轴ms 从第0帧中间对应的时间开始，到总时长结束，间距为一帧时长
-        x = np.linspace(0.5 * self.hop_length / self.sr, audio_total_time / 1000, formant_frq.shape[1])
+        x = np.linspace(
+            0.5 * self.hop_length / self.sr,
+            audio_total_time / 1000,
+            formant_frq.shape[1],
+        )
         for i in range(formant_frq.shape[0]):  # 依次绘制F1/F2/F3
             plt.plot(x, formant_frq[i, :], color_p[i], label="F" + str(i + 1))
-        plt.legend(prop={'family': 'Times New Roman', 'size': 10}, loc="upper right",
-                   framealpha=0.5, ncol=3, handletextpad=0.2, columnspacing=0.7)
+        plt.legend(
+            prop={"family": "Times New Roman", "size": 10},
+            loc="upper right",
+            framealpha=0.5,
+            ncol=3,
+            handletextpad=0.2,
+            columnspacing=0.7,
+        )
 
         plt.tight_layout()
         if show:
@@ -916,7 +1240,16 @@ class QualityFeatures:
 
 class VAD:
     """语音端点检测"""
-    def __init__(self, wav_file, frame_len=400, min_interval=15, e_low_multifactor=1.0, zcr_multifactor=1.0, pt=True):
+
+    def __init__(
+        self,
+        wav_file,
+        frame_len=400,
+        min_interval=15,
+        e_low_multifactor=1.0,
+        zcr_multifactor=1.0,
+        pt=True,
+    ):
         """
         初始化函数
         语音信号是非平稳信号，但是可以认为10~30ms的时间范围内，语音信号是平稳信号,比如这里我取25ms作为一帧
@@ -932,18 +1265,29 @@ class VAD:
         self.wave_data = rf.wave_data  # 获取音频全部采样点的数组形式数据,每个采样点类型为np.float32
         self.sampling_rate = rf.sr
         self.frame_len_samples = frame_len  # 帧长，单位采样点数
-        self.frame_len_time = round(self.frame_len_samples * 1000 / self.sampling_rate)  # 帧长，单位ms
+        self.frame_len_time = round(
+            self.frame_len_samples * 1000 / self.sampling_rate
+        )  # 帧长，单位ms
         self.energy = rf.short_time_energy()  # 获取短时能量
         self.zcr = rf.zero_crossing_rate()  # 获取过零率
         # 获取端点检测后的有效语音段
-        self.wav_dat_split_f, self.wav_dat_split, self.voiced_f, self.unvoiced_f = \
-            rf.activity_detect(min_interval, e_low_multifactor, zcr_multifactor, pt)
+        (
+            self.wav_dat_split_f,
+            self.wav_dat_split,
+            self.voiced_f,
+            self.unvoiced_f,
+        ) = rf.activity_detect(min_interval, e_low_multifactor, zcr_multifactor, pt)
         # 语音首尾端点检测，中间不检测
         if len(self.wav_dat_split_f[-1]) > 1:  # 避免语音过短，只有一帧
-            self.wav_dat_utterance = self.wave_data[self.wav_dat_split_f[0][0] * int(self.frame_len_samples):
-                                                    self.wav_dat_split_f[-1][1] * int(self.frame_len_samples)]
+            self.wav_dat_utterance = self.wave_data[
+                self.wav_dat_split_f[0][0]
+                * int(self.frame_len_samples) : self.wav_dat_split_f[-1][1]
+                * int(self.frame_len_samples)
+            ]
         else:  # 只有一帧时
-            self.wav_dat_utterance = self.wave_data[self.wav_dat_split_f[0][0] * int(self.frame_len_samples):]
+            self.wav_dat_utterance = self.wave_data[
+                self.wav_dat_split_f[0][0] * int(self.frame_len_samples) :
+            ]
 
     def plot(self):
         """
@@ -970,8 +1314,11 @@ class VAD:
         plt.grid()
         # 以下绘制语音波形曲线+端点检测分割线
         plt.subplot(1, 3, 1)
-        plt.gca().yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1f'))
-        time = [int(i * (audio_total_time / len(self.wave_data))) for i in range(0, len(self.wave_data))]
+        plt.gca().yaxis.set_major_formatter(mtick.FormatStrFormatter("%.1f"))
+        time = [
+            int(i * (audio_total_time / len(self.wave_data)))
+            for i in range(0, len(self.wave_data))
+        ]
         plt.title("Wave Form")
         plt.xlabel("Time/ms")
         plt.ylabel("Normalized Amplitude")
@@ -980,10 +1327,22 @@ class VAD:
         c = "g"
         for i in range(len(self.wav_dat_split_f)):  # 端点检测分割线
             for j in range(len(self.wav_dat_split_f[i])):
-                if (i == 0 and j == 0) or (i == len(self.wav_dat_split_f) - 1 and j == 1):
-                    plt.axvline(x=self.wav_dat_split_f[i][j] * self.frame_len_time, c=c, ls="-", lw=2)
+                if (i == 0 and j == 0) or (
+                    i == len(self.wav_dat_split_f) - 1 and j == 1
+                ):
+                    plt.axvline(
+                        x=self.wav_dat_split_f[i][j] * self.frame_len_time,
+                        c=c,
+                        ls="-",
+                        lw=2,
+                    )
                 else:
-                    plt.axvline(x=self.wav_dat_split_f[i][j] * self.frame_len_time, c=c, ls="--", lw=1.5)
+                    plt.axvline(
+                        x=self.wav_dat_split_f[i][j] * self.frame_len_time,
+                        c=c,
+                        ls="--",
+                        lw=1.5,
+                    )
             if c == "r":
                 c = "g"
             else:
@@ -994,8 +1353,16 @@ class VAD:
         plt.show()
 
 
-def my_acoustic_features(input_file, sr=None, frame_len=512, n_fft=None, win_step=2 / 3, window="hamming",
-                         preemph=0.97, **kwargs):
+def my_acoustic_features(
+    input_file,
+    sr=None,
+    frame_len=512,
+    n_fft=None,
+    win_step=2 / 3,
+    window="hamming",
+    preemph=0.97,
+    **kwargs
+):
     """
     主要利用librosa提取的各种声学特征,HSFs
     :param input_file: 输入音频文件
@@ -1021,36 +1388,93 @@ def my_acoustic_features(input_file, sr=None, frame_len=512, n_fft=None, win_ste
     rhythm_features = RhythmFeatures(input_file, sr, frame_len, n_fft, win_step, window)
     my_features = np.append(my_features, rhythm_features.hsf(**kwargs))  # 120维HSFs
     # 基于谱的相关特征
-    spectrum_features = SpectrumFeatures(input_file, sr, frame_len, n_fft, win_step, window, preemph)
-    mfcc = spectrum_features.mfcc(n_mfcc=13, ceplifter=22, n_mels=26, replace_energy=True)  # 39维MFCC特征
+    spectrum_features = SpectrumFeatures(
+        input_file, sr, frame_len, n_fft, win_step, window, preemph
+    )
+    mfcc = spectrum_features.mfcc(
+        n_mfcc=13, ceplifter=22, n_mels=26, replace_energy=True
+    )  # 39维MFCC特征
     lld_mfcc = [i for i in mfcc]  # 每一维作为LLDs
     # 声音质量特征
-    quality_features = QualityFeatures(input_file, sr, frame_len, n_fft, win_step, window)
-    fmt_frq, fmt_bw = quality_features.formant(ts_e=0.01, ts_f_d=200, ts_b_u=2000)  # 3个共振峰中心频率及其带宽
+    quality_features = QualityFeatures(
+        input_file, sr, frame_len, n_fft, win_step, window
+    )
+    fmt_frq, fmt_bw = quality_features.formant(
+        ts_e=0.01, ts_f_d=200, ts_b_u=2000
+    )  # 3个共振峰中心频率及其带宽
     # 第一共振峰中心频率及其带宽，并去除nan值
-    fmt_f1, fmt_b1 = fmt_frq[0, :][~np.isnan(fmt_frq[0, :])], fmt_bw[0, :][~np.isnan(fmt_frq[0, :])]
-    fmt_f1_d, fmt_b1_d = librosa.feature.delta(fmt_f1, width=3), librosa.feature.delta(fmt_b1, width=3)
-    fmt_f1_d2, fmt_b1_d2 = librosa.feature.delta(fmt_f1, width=3, order=2), librosa.feature.delta(fmt_b1, width=3, order=2)
+    fmt_f1, fmt_b1 = (
+        fmt_frq[0, :][~np.isnan(fmt_frq[0, :])],
+        fmt_bw[0, :][~np.isnan(fmt_frq[0, :])],
+    )
+    fmt_f1_d, fmt_b1_d = librosa.feature.delta(fmt_f1, width=3), librosa.feature.delta(
+        fmt_b1, width=3
+    )
+    fmt_f1_d2, fmt_b1_d2 = librosa.feature.delta(
+        fmt_f1, width=3, order=2
+    ), librosa.feature.delta(fmt_b1, width=3, order=2)
     # 第二共振峰中心频率及其带宽，并去除nan值
-    fmt_f2, fmt_b2 = fmt_frq[1, :][~np.isnan(fmt_frq[1, :])], fmt_bw[1, :][~np.isnan(fmt_frq[1, :])]
-    fmt_f2_d, fmt_b2_d = librosa.feature.delta(fmt_f2, width=3), librosa.feature.delta(fmt_b2, width=3)
-    fmt_f2_d2, fmt_b2_d2 = librosa.feature.delta(fmt_f2, width=3, order=2), librosa.feature.delta(fmt_b2, width=3,
-                                                                                                  order=2)
+    fmt_f2, fmt_b2 = (
+        fmt_frq[1, :][~np.isnan(fmt_frq[1, :])],
+        fmt_bw[1, :][~np.isnan(fmt_frq[1, :])],
+    )
+    fmt_f2_d, fmt_b2_d = librosa.feature.delta(fmt_f2, width=3), librosa.feature.delta(
+        fmt_b2, width=3
+    )
+    fmt_f2_d2, fmt_b2_d2 = librosa.feature.delta(
+        fmt_f2, width=3, order=2
+    ), librosa.feature.delta(fmt_b2, width=3, order=2)
     # 第三共振峰中心频率及其带宽，并去除nan值
-    fmt_f3, fmt_b3 = fmt_frq[2, :][~np.isnan(fmt_frq[2, :])], fmt_bw[2, :][~np.isnan(fmt_frq[2, :])]
-    fmt_f3_d, fmt_b3_d = librosa.feature.delta(fmt_f3, width=3), librosa.feature.delta(fmt_b3, width=3)
-    fmt_f3_d2, fmt_b3_d2 = librosa.feature.delta(fmt_f3, width=3, order=2), librosa.feature.delta(fmt_b3, width=3,
-                                                                                                  order=2)
+    fmt_f3, fmt_b3 = (
+        fmt_frq[2, :][~np.isnan(fmt_frq[2, :])],
+        fmt_bw[2, :][~np.isnan(fmt_frq[2, :])],
+    )
+    fmt_f3_d, fmt_b3_d = librosa.feature.delta(fmt_f3, width=3), librosa.feature.delta(
+        fmt_b3, width=3
+    )
+    fmt_f3_d2, fmt_b3_d2 = librosa.feature.delta(
+        fmt_f3, width=3, order=2
+    ), librosa.feature.delta(fmt_b3, width=3, order=2)
     jit_abs, jit_rel = quality_features.jitter()  # 全局特征：频率微扰
     shi_abs, shi_rel = quality_features.shimmer()  # 全局特征：振幅微扰
-    lld_fmt = [fmt_f1, fmt_f2, fmt_f3, fmt_f1_d, fmt_f2_d, fmt_f3_d, fmt_f1_d2, fmt_f2_d2, fmt_f3_d2,
-               fmt_b1, fmt_b2, fmt_b3, fmt_b1_d, fmt_b2_d, fmt_b3_d, fmt_b1_d2, fmt_b2_d2, fmt_b3_d2]
+    lld_fmt = [
+        fmt_f1,
+        fmt_f2,
+        fmt_f3,
+        fmt_f1_d,
+        fmt_f2_d,
+        fmt_f3_d,
+        fmt_f1_d2,
+        fmt_f2_d2,
+        fmt_f3_d2,
+        fmt_b1,
+        fmt_b2,
+        fmt_b3,
+        fmt_b1_d,
+        fmt_b2_d,
+        fmt_b3_d,
+        fmt_b1_d2,
+        fmt_b2_d2,
+        fmt_b3_d2,
+    ]
     lld = lld_mfcc + lld_fmt
     hsf = []
     for i in range(len(lld)):  # 基于帧特征LLDs计算全局特征HSFs
-        hsf = np.append(hsf, [np.min(lld[i]), np.max(lld[i]), np.ptp(lld[i]), np.mean(lld[i]),
-                              np.std(lld[i]), skew(lld[i]), kurtosis(lld[i])])
-    my_features = np.append(my_features, np.append(hsf, [jit_abs, jit_rel, shi_abs, shi_rel]))  # 组合成1*523维全局特征
+        hsf = np.append(
+            hsf,
+            [
+                np.min(lld[i]),
+                np.max(lld[i]),
+                np.ptp(lld[i]),
+                np.mean(lld[i]),
+                np.std(lld[i]),
+                skew(lld[i]),
+                kurtosis(lld[i]),
+            ],
+        )
+    my_features = np.append(
+        my_features, np.append(hsf, [jit_abs, jit_rel, shi_abs, shi_rel])
+    )  # 组合成1*523维全局特征
     return my_features
 
 
